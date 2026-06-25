@@ -1,447 +1,684 @@
 <!DOCTYPE html>
 <html lang="ka">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Career Navigator AI - კარიერული ასისტენტი და თავსებადობის RAG ანალიზი</title>
-  
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            slate: {
-              950: '#020617',
-            }
-          }
-        }
-      }
-    }
-  </script>
-  
-  <!-- Custom Stylesheet -->
-  <link rel="stylesheet" href="style.css">
-  
-  <!-- PDF.js CDN for Client-Side PDF Parsing -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
-  <script>
-    // Set worker source path for PDF.js
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-  </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Career Navigator AI - შენი ინტელექტუალური კარიერული პარტნიორი. CV-ისა და ვაკანსიის ანალიზი, კარიერული რჩევები და წარმატების ისტორიები.">
+    <meta name="keywords" content="კარიერა, CV ანალიზი, ვაკანსია, კარიერული რჩევები, სამსახური, Georgia career">
+    <meta property="og:title" content="Career Navigator AI - კარიერული ინტელექტი">
+    <meta property="og:description" content="ატვირთე CV, მიუთითე ვაკანსია და მიიღე ზუსტი ანალიზი!">
+    <title>Career Navigator AI | კარიერული ინტელექტი</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Georgian:wght@300;400;500;600;700;800;900&family=Noto+Serif+Georgian:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <!-- PDF.js for PDF parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- Marked.js for markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
-<body class="min-h-screen text-slate-100 flex flex-col relative">
+<body>
 
-  <!-- Ethics / Privacy Warning Banner -->
-  <div id="privacy-warning-banner" class="bg-amber-950/40 border-b border-amber-500/20 px-4 py-2 text-xs md:text-sm text-amber-300 flex items-center justify-between gap-4 z-40">
-    <div class="flex items-center gap-2">
-      <svg class="w-5 h-5 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-      </svg>
-      <span>
-        <strong>კონფიდენციალურობა დაცულია:</strong> თქვენი CV და ვაკანსიის ფაილები მუშავდება ლოკალურად ბრაუზერში. AI-ს შეუძლია დაუშვას შეცდომები (ჰალუცინაციები) - გადაამოწმეთ მნიშვნელოვანი ფაქტები.
-      </span>
-    </div>
-    <button onclick="document.getElementById('privacy-warning-banner').style.display='none'" class="text-amber-400 hover:text-amber-200 font-bold text-lg">&times;</button>
-  </div>
+    <!-- PARTICLES BACKGROUND -->
+    <div id="particles-container"></div>
 
-  <!-- Main Header -->
-  <header class="glass-panel border-b border-white/10 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 sticky top-0 z-30">
-    <!-- Logo area -->
-    <div class="flex items-center gap-3">
-      <div class="w-10 h-10 rounded-xl bg-gradient-cyber flex items-center justify-center animate-pulse-glow">
-        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
-        </svg>
-      </div>
-      <div>
-        <h1 class="text-lg font-bold tracking-tight text-gradient-cyan-purple font-sans">Career Navigator AI</h1>
-        <p class="text-[10px] text-slate-400">ინფორმაციული მეგზური და RAG თავსებადობის პლატფორმა</p>
-      </div>
-    </div>
-
-    <!-- Search & Navigation / Controls -->
-    <div class="flex items-center gap-3 w-full md:w-auto flex-grow md:flex-grow-0 justify-end">
-      <!-- Search Engine -->
-      <div class="relative w-full max-w-xs">
-        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-          </svg>
-        </div>
-        <input type="text" id="profession-search" placeholder="ჩაწერე პროფესია (მაგ. Python)..." class="w-full bg-slate-900 border border-slate-700 focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl pl-9 pr-8 py-2 text-xs focus:outline-none transition-colors">
-        <button id="search-clear-btn" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-200 hidden">
-          &times;
-        </button>
-        <!-- Suggestion Dropdown -->
-        <div id="search-suggestions" class="search-suggestions hidden"></div>
-      </div>
-
-      <!-- Action triggers -->
-      <button onclick="toggleSettingsModal(true)" class="flex items-center justify-center w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors" title="Gemini API Key Setup">
-        ⚙️
-      </button>
-      
-      <button id="chatbot-toggle-btn" onclick="toggleChatDrawer(true)" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-lg hover:shadow-indigo-600/30 flex items-center gap-1.5 shrink-0">
-        <span>💬 Career Coach</span>
-        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" id="chat-active-indicator"></span>
-      </button>
-    </div>
-  </header>
-
-  <!-- Main Container -->
-  <main class="flex-grow p-4 md:p-6 max-w-7xl mx-auto w-full flex flex-col gap-8">
-    
-    <!-- Profession overview badge / banner (displayed dynamically when searching) -->
-    <div id="profession-insight-banner" class="hidden glass-panel bg-gradient-cyber-glow p-5 rounded-2xl animate-fade-in flex-col gap-3">
-      <div class="flex justify-between items-start">
-        <div>
-          <span class="text-[10px] uppercase bg-indigo-950 text-indigo-300 px-2 py-0.5 rounded font-mono-custom border border-indigo-500/20">საძიებო რეზიუმე</span>
-          <h3 class="text-base font-bold text-white mt-1" id="insight-title">პროგრამული დეველოპმენტი</h3>
-        </div>
-        <button onclick="clearSearchFilter()" class="text-slate-400 hover:text-white text-xs">&times; ფილტრის მოხსნა</button>
-      </div>
-      <p class="text-xs text-slate-300 leading-relaxed" id="insight-desc"></p>
-      <div class="flex flex-col gap-1">
-        <span class="text-[10px] text-slate-400 font-bold uppercase">საჭირო უნარები:</span>
-        <div class="flex flex-wrap gap-1.5" id="insight-skills"></div>
-      </div>
-      <div class="bg-slate-950/40 p-2.5 rounded-lg border border-white/5 text-[11px] text-indigo-300 italic">
-        <strong>რჩევა ზრდისთვის:</strong> <span id="insight-tips"></span>
-      </div>
-    </div>
-
-    <!-- Body Layout: Two Columns -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      
-      <!-- COLUMN 1: CV & Vacancy Input (Left) -->
-      <section class="lg:col-span-6 flex flex-col gap-6">
-        
-        <!-- CV Input Card -->
-        <div class="glass-panel p-5 md:p-6 rounded-2xl flex flex-col gap-4 relative overflow-hidden">
-          <div class="absolute -right-10 -top-10 w-24 h-24 bg-cyan-500/5 rounded-full blur-2xl"></div>
-          
-          <div class="flex justify-between items-center">
-            <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-              <span class="text-cyan-400">📄</span>
-              <span>1. ატვირთე CV (რეზიუმე)</span>
-            </h2>
-            <span class="text-[10px] font-mono-custom px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400" id="cv-status-badge">ცარიელი</span>
-          </div>
-
-          <!-- Drag and Drop Dropzone -->
-          <div class="border-2 border-dashed border-slate-700 hover:border-cyan-500/50 rounded-xl p-4 text-center cursor-pointer transition-all bg-slate-950/20 relative" id="cv-drop-zone">
-            <input type="file" id="cv-file-input" accept=".txt,.pdf" class="hidden">
-            <div class="flex flex-col items-center gap-2 py-3">
-              <svg class="w-8 h-8 text-cyan-400 animate-float" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-              </svg>
-              <div>
-                <button onclick="document.getElementById('cv-file-input').click()" class="bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 text-cyan-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">ფაილის არჩევა</button>
-                <p class="text-[10px] text-slate-500 mt-1">მხარდაჭერილია PDF და TXT</p>
-              </div>
+    <!-- ===== HEADER ===== -->
+    <header id="main-header">
+        <div class="header-inner">
+            <!-- Logo -->
+            <div class="header-logo">
+                <div class="logo-icon">
+                    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="18" cy="18" r="16" stroke="url(#logoGrad)" stroke-width="2"/>
+                        <path d="M18 6 L18 30 M6 18 L30 18" stroke="url(#logoGrad)" stroke-width="1.5" stroke-linecap="round"/>
+                        <circle cx="18" cy="18" r="4" fill="url(#logoGrad)"/>
+                        <path d="M18 6 L22 10 M18 30 L14 26 M30 18 L26 14 M6 18 L10 22" stroke="url(#logoGrad)" stroke-width="1.5" stroke-linecap="round"/>
+                        <defs>
+                            <linearGradient id="logoGrad" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00D4FF"/>
+                                <stop offset="1" stop-color="#7B2FBE"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <span class="logo-main">Career</span>
+                    <span class="logo-sub">Navigator AI</span>
+                </div>
             </div>
-          </div>
 
-          <!-- Raw text fallback -->
-          <div class="flex flex-col gap-1.5">
-            <label for="cv-text-input" class="text-[10px] text-slate-400 font-bold uppercase">ან ჩაწერე CV ტექსტურად:</label>
-            <textarea id="cv-text-input" rows="4" placeholder="მაგალითად: მე ვარ კომპიუტერული მეცნიერებების სტუდენტი. მაქვს გამოცდილება Python-სა და SQL-ში. შექმნილი მაქვს მცირე API-ები FastAPI-ის გამოყენებით..." class="w-full bg-slate-900 border border-slate-700 focus:border-cyan-500 text-slate-100 rounded-lg p-2.5 text-xs focus:outline-none transition-colors resize-none"></textarea>
-          </div>
+            <!-- Center Nav -->
+            <nav class="header-nav">
+                <a href="#analyzer-section" class="nav-link">CV ანალიზი</a>
+                <a href="#stories-section" class="nav-link">ისტორიები</a>
+                <a href="#quote-section" class="nav-link">მოტივაცია</a>
+            </nav>
+
+            <!-- Right Controls -->
+            <div class="header-right">
+                <!-- Search Bar -->
+                <div class="header-search-wrapper">
+                    <div class="search-bar" id="header-search-bar">
+                        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+                        </svg>
+                        <input type="text" id="profession-search" placeholder="ჩაწერე პროფესია..." autocomplete="off"/>
+                        <button class="search-btn" id="search-btn">მოძებნა</button>
+                    </div>
+                    <!-- Search Dropdown -->
+                    <div class="search-dropdown" id="search-dropdown" style="display:none;">
+                        <div class="search-results-content" id="search-results-content">
+                            <div class="search-loading">
+                                <div class="spinner"></div>
+                                <p>ვეძებთ...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Toggle -->
+                <button class="chat-launcher-btn" id="chat-launcher-btn" title="კარიერული კოაჩი">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    <span class="chat-badge" id="chat-badge">AI</span>
+                </button>
+            </div>
         </div>
+    </header>
 
-        <!-- Vacancy Input Card -->
-        <div class="glass-panel p-5 md:p-6 rounded-2xl flex flex-col gap-4 relative overflow-hidden">
-          <div class="absolute -right-10 -top-10 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl"></div>
-
-          <div class="flex justify-between items-center">
-            <h2 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-              <span class="text-purple-400">💼</span>
-              <span>2. ატვირთე ვაკანსია</span>
-            </h2>
-            <span class="text-[10px] font-mono-custom px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400" id="vac-status-badge">ცარიელი</span>
-          </div>
-
-          <!-- Drag and Drop Dropzone -->
-          <div class="border-2 border-dashed border-slate-700 hover:border-purple-500/50 rounded-xl p-4 text-center cursor-pointer transition-all bg-slate-950/20 relative" id="vac-drop-zone">
-            <input type="file" id="vac-file-input" accept=".txt,.pdf" class="hidden">
-            <div class="flex flex-col items-center gap-2 py-3">
-              <svg class="w-8 h-8 text-purple-400 animate-float" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-              </svg>
-              <div>
-                <button onclick="document.getElementById('vac-file-input').click()" class="bg-purple-950 hover:bg-purple-900 border border-purple-800 text-purple-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">ფაილის არჩევა</button>
-                <p class="text-[10px] text-slate-500 mt-1">მხარდაჭერილია PDF და TXT</p>
-              </div>
+    <!-- ===== HERO SECTION ===== -->
+    <section class="hero-section" id="hero">
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="badge-dot"></span>
+                AI-Powered კარიერული პლატფორმა
             </div>
-          </div>
-
-          <!-- Raw text fallback -->
-          <div class="flex flex-col gap-1.5">
-            <label for="vac-text-input" class="text-[10px] text-slate-400 font-bold uppercase">ან ჩაწერე ვაკანსიის აღწერა:</label>
-            <textarea id="vac-text-input" rows="4" placeholder="მაგალითად: IT კომპანია ეძებს Junior Python დეველოპერს. მოთხოვნები: Python-ის კარგი ცოდნა, FastAPI-ის საბაზისო ცოდნა, SQL და Git. სასურველია ინგლისური ენის ცოდნა..." class="w-full bg-slate-900 border border-slate-700 focus:border-purple-500 text-slate-100 rounded-lg p-2.5 text-xs focus:outline-none transition-colors resize-none"></textarea>
-          </div>
-        </div>
-
-        <!-- Action Button -->
-        <button id="analyze-btn" onclick="startMatchingAnalysis()" class="w-full bg-gradient-cyber hover:opacity-90 text-white font-bold py-3.5 rounded-xl text-sm transition-all shadow-lg hover:shadow-indigo-600/30 flex items-center justify-center gap-2">
-          <span>⚡ თავსებადობის RAG ანალიზი</span>
-          <!-- Loading spinner -->
-          <svg id="analyze-spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-        </button>
-
-      </section>
-
-      <!-- COLUMN 2: Match Results / Compatibility Dashboard (Right) -->
-      <section class="lg:col-span-6 flex flex-col gap-6">
-        
-        <div class="glass-panel p-5 md:p-6 rounded-2xl flex flex-col justify-between gap-6 min-h-full relative overflow-hidden" id="results-panel">
-          <div class="absolute -left-10 -bottom-10 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl"></div>
-
-          <!-- PLACEHOLDER VIEW (when not analyzed yet) -->
-          <div class="text-center py-20 text-slate-500 flex flex-col items-center justify-center gap-4 h-full" id="results-placeholder">
-            <div class="w-16 h-16 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-2xl text-slate-600">
-              ⚡
+            <h1 class="hero-title">
+                შეაფასე შენი<br>
+                <span class="gradient-text">კარიერული პოტენციალი</span>
+            </h1>
+            <p class="hero-subtitle">
+                ატვირთე CV, მიუთითე ვაკანსია და მიიღე AI-ანალიზი — 
+                გაიგე სად ხარ ახლა და სად შეგიძლია მიხვიდე.
+            </p>
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <span class="stat-number">98%</span>
+                    <span class="stat-label">ზუსტი ანალიზი</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-number">500+</span>
+                    <span class="stat-label">წარმატების ისტორია</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-number">24/7</span>
+                    <span class="stat-label">AI კოაჩი</span>
+                </div>
             </div>
-            <div>
-              <h3 class="text-sm font-bold text-slate-400">RAG თავსებადობის შედეგები</h3>
-              <p class="text-xs max-w-sm mt-1 mx-auto leading-relaxed">ჩაწერეთ ან ატვირთეთ თქვენი CV და ვაკანსია მარცხენა მხარეს, შემდეგ კი დააჭირეთ ანალიზს შესაბამისობის დასადგენად.</p>
-            </div>
-          </div>
-
-          <!-- REAL ANALYSIS RESULT VIEW -->
-          <div id="results-content" class="hidden flex-col gap-5 h-full animate-fade-in">
-            <!-- Score & Circular Progress -->
-            <div class="flex items-center justify-between border-b border-white/5 pb-4">
-              <div>
-                <h3 class="text-base font-bold text-white">თავსებადობის ანგარიში</h3>
-                <p class="text-xs text-slate-400 font-mono-custom" id="analysis-mode-indicator">სიმულაციური RAG რეჟიმი</p>
-              </div>
-              
-              <!-- Premium Radial Progress Indicator -->
-              <div class="relative flex items-center justify-center">
-                <svg class="w-20 h-20">
-                  <circle class="text-slate-800" stroke-width="4" stroke="currentColor" fill="transparent" r="32" cx="40" cy="40" />
-                  <circle class="progress-ring-circle text-indigo-500" id="progress-circle" stroke-width="4" stroke-dasharray="201" stroke-dashoffset="201" stroke-linecap="round" stroke="currentColor" fill="transparent" r="32" cx="40" cy="40" />
+            <a href="#analyzer-section" class="hero-cta-btn">
+                დაიწყე ახლა
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
                 </svg>
-                <span class="absolute text-sm font-extrabold font-mono-custom text-white" id="match-percent-text">0%</span>
-              </div>
-            </div>
-
-            <!-- Strengths vs Gaps -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <!-- Strengths (Green) -->
-              <div class="bg-emerald-950/20 border border-emerald-500/25 p-4 rounded-xl flex flex-col gap-2">
-                <h4 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <span class="text-sm">✔</span>
-                  <span>ძლიერი მხარეები</span>
-                </h4>
-                <ul class="text-xs text-slate-300 space-y-1.5 list-disc list-inside" id="strengths-list"></ul>
-              </div>
-
-              <!-- Gaps (Red) -->
-              <div class="bg-rose-950/20 border border-rose-500/25 p-4 rounded-xl flex flex-col gap-2">
-                <h4 class="text-xs font-bold text-rose-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <span class="text-sm">⚠</span>
-                  <span>ხარვეზები / Gaps</span>
-                </h4>
-                <ul class="text-xs text-slate-300 space-y-1.5 list-disc list-inside" id="gaps-list"></ul>
-              </div>
-            </div>
-
-            <!-- Motivational AI Mentor comment card -->
-            <div class="bg-indigo-950/30 border border-indigo-500/30 p-4 rounded-xl flex flex-col gap-2">
-              <h4 class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
-                <span>🤖</span>
-                <span>კარიერული მენტორის შეფასება</span>
-              </h4>
-              <p class="text-xs text-slate-200 leading-relaxed italic" id="mentor-rag-recommendation"></p>
-            </div>
-            
-            <!-- Quick prompt advice suggestion -->
-            <div class="flex justify-between items-center text-[10px] text-slate-400 pt-2 border-t border-white/5">
-              <span>გსურთ მეტი დეტალი?</span>
-              <button onclick="askCoachAboutJob()" class="text-indigo-400 hover:text-indigo-300 font-bold underline">ჰკითხე ჩატბოტს &rarr;</button>
-            </div>
-          </div>
-
+            </a>
         </div>
-
-      </section>
-
-    </div>
-
-    <!-- Career Insights / Success Stories section -->
-    <section class="flex flex-col gap-4">
-      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 border-b border-white/5 pb-2">
-        <div>
-          <h2 class="text-base font-bold text-white flex items-center gap-2">
-            <span>🚀</span>
-            <span>კარიერული ისტორიები & გამოცდილება</span>
-          </h2>
-          <p class="text-xs text-slate-400">რეალური წარმატებული ადამიანების ისტორიები და მათი პრაქტიკული რჩევები სტუდენტებისთვის</p>
+        <div class="hero-visual">
+            <div class="hero-card floating-card">
+                <div class="hc-header">
+                    <div class="hc-dot red"></div>
+                    <div class="hc-dot yellow"></div>
+                    <div class="hc-dot green"></div>
+                    <span>CV ანალიზი</span>
+                </div>
+                <div class="hc-match-circle">
+                    <svg viewBox="0 0 100 100" class="match-svg">
+                        <circle cx="50" cy="50" r="40" fill="none" stroke="#1a1a3e" stroke-width="8"/>
+                        <circle cx="50" cy="50" r="40" fill="none" stroke="url(#matchGrad)" stroke-width="8"
+                            stroke-dasharray="213" stroke-dashoffset="53" stroke-linecap="round" transform="rotate(-90 50 50)"/>
+                        <defs>
+                            <linearGradient id="matchGrad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00D4FF"/>
+                                <stop offset="1" stop-color="#7B2FBE"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <div class="match-pct">75%</div>
+                </div>
+                <div class="hc-skills">
+                    <div class="skill-bar-item">
+                        <span>Python</span>
+                        <div class="skill-bar"><div class="skill-fill" style="width:90%"></div></div>
+                    </div>
+                    <div class="skill-bar-item">
+                        <span>Machine Learning</span>
+                        <div class="skill-bar"><div class="skill-fill" style="width:70%"></div></div>
+                    </div>
+                    <div class="skill-bar-item">
+                        <span>SQL</span>
+                        <div class="skill-bar"><div class="skill-fill" style="width:55%"></div></div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="text-[10px] text-slate-500 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-full shrink-0">
-          გადამოწმებული საჯარო ფაქტები
-        </div>
-      </div>
-
-      <!-- Success Stories Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="success-stories-grid">
-        <!-- Rendered dynamically -->
-      </div>
     </section>
 
-    <!-- Quote of the Day Section -->
-    <section id="quote-section" class="glass-panel p-5 rounded-2xl bg-gradient-cyber-glow border-indigo-500/20 text-center relative overflow-hidden py-6">
-      <div class="absolute top-2 left-6 text-slate-700/30 text-5xl font-serif">“</div>
-      <div class="flex flex-col gap-2 max-w-2xl mx-auto">
-        <p class="text-xs md:text-sm text-slate-200 italic leading-relaxed" id="daily-quote-text">
-          "დავალების პატარა ნაწილებად დაყოფა არის წარმატებული კარიერის საიდუმლო. ნუ შეგაშინებთ დიდი მიზანი, დაიწყეთ დღესვე პატარა ნაბიჯით!"
-        </p>
-        <span class="text-[10px] text-teal-400 font-bold font-sans" id="daily-quote-author">— AI მენტორი</span>
-      </div>
-      <div class="absolute bottom-0 right-6 text-slate-700/30 text-5xl font-serif">”</div>
+    <!-- ===== MAIN ANALYZER SECTION ===== -->
+    <section class="analyzer-section" id="analyzer-section">
+        <div class="section-header">
+            <h2 class="section-title">CV & ვაკანსიის ანალიზი</h2>
+            <p class="section-subtitle">ატვირთე შენი CV და ვაკანსია — AI გიანგარიშებს თავსებადობას</p>
+        </div>
+
+        <div class="analyzer-grid">
+            <!-- LEFT: CV Upload & Vacancy Input -->
+            <div class="analyzer-left">
+                <!-- CV Input Panel -->
+                <div class="panel cv-panel">
+                    <div class="panel-header">
+                        <div class="panel-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                <polyline points="10 9 9 9 8 9"/>
+                            </svg>
+                        </div>
+                        <h3>შენი CV</h3>
+                    </div>
+                    
+                    <!-- Tab Switcher -->
+                    <div class="tab-switcher">
+                        <button class="tab-btn active" data-tab="text-tab">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                            ტექსტად შეყვანა
+                        </button>
+                        <button class="tab-btn" data-tab="pdf-tab">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            PDF ატვირთვა
+                        </button>
+                    </div>
+
+                    <!-- Text Tab -->
+                    <div class="tab-content active" id="text-tab">
+                        <textarea id="cv-text" class="cv-textarea" placeholder="ჩასვი შენი CV-ის ტექსტი აქ...
+
+მაგ.:
+სახელი: გიორგი კვარაცხელია
+გამოცდილება: 3 წელი Python პროგრამისტი
+განათლება: ბათუმის სახელმწიფო უნივერსიტეტი, CS
+უნარები: Python, Django, React, SQL, Git
+ენები: ქართული (მშობლიური), ინგლისური (B2)..."></textarea>
+                        <div class="char-counter" id="cv-char-counter">0 სიმბოლო</div>
+                    </div>
+
+                    <!-- PDF Tab -->
+                    <div class="tab-content" id="pdf-tab" style="display:none;">
+                        <div class="pdf-upload-zone" id="pdf-drop-zone">
+                            <div class="upload-icon">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="17 8 12 3 7 8"/>
+                                    <line x1="12" y1="3" x2="12" y2="15"/>
+                                </svg>
+                            </div>
+                            <p class="upload-text">PDF-ის ჩაგდება ან <label for="pdf-file-input" class="upload-link">ფაილის არჩევა</label></p>
+                            <p class="upload-hint">მხოლოდ PDF ფაილები • მაქს. 10MB</p>
+                            <input type="file" id="pdf-file-input" accept=".pdf" style="display:none;">
+                        </div>
+                        <div class="pdf-status" id="pdf-status" style="display:none;">
+                            <div class="pdf-status-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 11l3 3L22 4"/>
+                                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                                </svg>
+                            </div>
+                            <div class="pdf-status-info">
+                                <span id="pdf-filename">filename.pdf</span>
+                                <span id="pdf-extracted-count">0 სიმბოლო ამოღებულია</span>
+                            </div>
+                            <button class="pdf-remove-btn" id="pdf-remove-btn">✕</button>
+                        </div>
+                        <!-- Hidden textarea for extracted PDF text -->
+                        <textarea id="cv-pdf-text" style="display:none;"></textarea>
+                    </div>
+                </div>
+
+                <!-- Vacancy Panel -->
+                <div class="panel vacancy-panel">
+                    <div class="panel-header">
+                        <div class="panel-icon vacancy-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                            </svg>
+                        </div>
+                        <h3>ვაკანსია</h3>
+                    </div>
+                    <div class="vacancy-url-row">
+                        <input type="text" id="vacancy-url" class="vacancy-url-input" placeholder="ვაკანსიის URL (სურვილისამებრ)..." />
+                        <button class="fetch-url-btn" id="fetch-url-btn" title="URL-დან ჩატვირთვა">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <textarea id="vacancy-text" class="vacancy-textarea" placeholder="ჩასვი ვაკანსიის ტექსტი აქ...
+
+მაგ.:
+პოზიცია: Junior Data Scientist
+კომპანია: TBC Bank
+მოთხოვნები:
+- Python (3+ წელი)
+- Machine Learning ცოდნა
+- SQL გამოცდილება
+- ინგლისური ენის ცოდნა B2+
+..."></textarea>
+                </div>
+
+                <!-- Analyze Button -->
+                <button class="analyze-btn" id="analyze-btn">
+                    <svg class="btn-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                    <span>ანალიზის დაწყება</span>
+                    <div class="btn-shine"></div>
+                </button>
+            </div>
+
+            <!-- RIGHT: Results Panel -->
+            <div class="analyzer-right">
+                <div class="results-panel" id="results-panel">
+                    <!-- Default state -->
+                    <div class="results-empty" id="results-empty">
+                        <div class="results-empty-icon">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 8v4l3 3"/>
+                            </svg>
+                        </div>
+                        <h3>შედეგები გამოჩნდება აქ</h3>
+                        <p>შეავსე CV და ვაკანსია, შემდეგ დააჭირე "ანალიზის დაწყება"</p>
+                    </div>
+
+                    <!-- Loading state -->
+                    <div class="results-loading" id="results-loading" style="display:none;">
+                        <div class="ai-thinking">
+                            <div class="thinking-orb"></div>
+                            <div class="thinking-rings">
+                                <div class="ring r1"></div>
+                                <div class="ring r2"></div>
+                                <div class="ring r3"></div>
+                            </div>
+                        </div>
+                        <p class="loading-text">AI აანალიზებს შენს CV-ს...</p>
+                        <div class="loading-steps">
+                            <div class="step-item active" id="step-1">
+                                <div class="step-dot"></div>
+                                <span>CV-ის წაკითხვა</span>
+                            </div>
+                            <div class="step-item" id="step-2">
+                                <div class="step-dot"></div>
+                                <span>უნარების ამოკრეფა</span>
+                            </div>
+                            <div class="step-item" id="step-3">
+                                <div class="step-dot"></div>
+                                <span>ვაკანსიასთან შედარება</span>
+                            </div>
+                            <div class="step-item" id="step-4">
+                                <div class="step-dot"></div>
+                                <span>შედეგების გენერაცია</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results content -->
+                    <div class="results-content" id="results-content" style="display:none;">
+                        <!-- Match Score -->
+                        <div class="match-score-section">
+                            <div class="score-circle-wrapper">
+                                <svg class="score-svg" viewBox="0 0 160 160">
+                                    <circle cx="80" cy="80" r="65" fill="none" stroke="#1a1a3e" stroke-width="12"/>
+                                    <circle cx="80" cy="80" r="65" fill="none" stroke="url(#scoreGrad)" stroke-width="12"
+                                        stroke-dasharray="408.41" stroke-dashoffset="408.41"
+                                        stroke-linecap="round" transform="rotate(-90 80 80)"
+                                        id="score-circle" class="score-circle-animated"/>
+                                    <defs>
+                                        <linearGradient id="scoreGrad" x1="0" y1="0" x2="160" y2="160" gradientUnits="userSpaceOnUse">
+                                            <stop stop-color="#00D4FF"/>
+                                            <stop offset="1" stop-color="#7B2FBE"/>
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+                                <div class="score-inner">
+                                    <span class="score-value" id="score-display">0%</span>
+                                    <span class="score-label">თავსებადობა</span>
+                                </div>
+                            </div>
+                            <div class="score-badges">
+                                <div class="score-badge" id="score-badge">
+                                    <span class="badge-emoji">🎯</span>
+                                    <span class="badge-text">ანალიზი დასრულებულია</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Strengths & Gaps -->
+                        <div class="analysis-blocks">
+                            <div class="analysis-block strengths">
+                                <div class="block-header">
+                                    <span class="block-icon">✅</span>
+                                    <h4>ძლიერი მხარეები</h4>
+                                </div>
+                                <ul id="strengths-list" class="analysis-list"></ul>
+                            </div>
+                            <div class="analysis-block gaps">
+                                <div class="block-header">
+                                    <span class="block-icon">⚠️</span>
+                                    <h4>ხარვეზები / Gaps</h4>
+                                </div>
+                                <ul id="gaps-list" class="analysis-list"></ul>
+                            </div>
+                        </div>
+
+                        <!-- Skills Match -->
+                        <div class="skills-match-section">
+                            <h4 class="sm-title">უნარების შესაბამისობა</h4>
+                            <div id="skills-match-list" class="skills-match-list"></div>
+                        </div>
+
+                        <!-- Recommendations -->
+                        <div class="recommendations-section">
+                            <h4 class="rec-title">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                </svg>
+                                AI-რეკომენდაციები
+                            </h4>
+                            <div id="recommendations-content" class="rec-content"></div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="results-actions">
+                            <button class="action-btn primary" id="get-advice-btn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                </svg>
+                                AI-ისგან რჩევა მოთხოვნა
+                            </button>
+                            <button class="action-btn secondary" id="reanalyze-btn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="1 4 1 10 7 10"/>
+                                    <path d="M3.51 15a9 9 0 1 0 .49-3.51"/>
+                                </svg>
+                                ხელახლა ანალიზი
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </section>
 
-  </main>
-
-  <!-- Main Footer -->
-  <footer class="glass-panel border-t border-white/10 mt-auto bg-slate-950/70">
-    <div class="max-w-7xl mx-auto px-6 py-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-400">
-      
-      <div class="flex flex-col gap-1 text-center md:text-left">
-        <span>&copy; 2026 <strong>Career Navigator AI</strong>. ყველა უფლება დაცულია.</span>
-        <span class="text-[10px] text-slate-500">პლატფორმა შექმნილია AI ეთიკისა და ინფორმაციული უსაფრთხოების წესების სრული დაცვით.</span>
-      </div>
-
-      <div class="flex flex-wrap gap-4 justify-center">
-        <a href="#privacy" onclick="showHelpModal('privacy')" class="hover:text-slate-200 transition-colors underline">კონფიდენციალურობა</a>
-        <a href="#rules" onclick="showHelpModal('rules')" class="hover:text-slate-200 transition-colors underline">წესები & პირობები</a>
-        <a href="#help" onclick="showHelpModal('help')" class="hover:text-slate-200 transition-colors underline">დახმარება & მხარდაჭერა</a>
-      </div>
-
-    </div>
-  </footer>
-
-  <!-- Slide-out Chatbot Drawer -->
-  <aside id="chatbot-drawer" class="chat-drawer flex flex-col">
-    <!-- Header -->
-    <div class="p-4 bg-slate-900/90 border-b border-white/5 flex justify-between items-center">
-      <div class="flex items-center gap-2">
-        <div class="w-8 h-8 rounded-full bg-indigo-600/20 text-indigo-400 border border-indigo-500/20 flex items-center justify-center text-sm">
-          🤖
+    <!-- ===== SUCCESS STORIES SECTION ===== -->
+    <section class="stories-section" id="stories-section">
+        <div class="section-header">
+            <div class="section-tag">შთაგონება</div>
+            <h2 class="section-title">წარმატების ისტორიები</h2>
+            <p class="section-subtitle">ისწავლე რეალური ადამიანების გამოცდილებიდან</p>
         </div>
-        <div>
-          <h4 class="text-xs font-bold text-white">Career Coach მენტორი</h4>
-          <span class="text-[9px] text-emerald-400 flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
-            აქტიურია (ხაზზე)
-          </span>
+
+        <!-- Filter Tabs -->
+        <div class="stories-filter">
+            <button class="filter-btn active" data-category="all">ყველა</button>
+            <button class="filter-btn" data-category="tech">ტექნოლოგია</button>
+            <button class="filter-btn" data-category="business">ბიზნესი</button>
+            <button class="filter-btn" data-category="creative">კრეატიული</button>
+            <button class="filter-btn" data-category="science">მეცნიერება</button>
         </div>
-      </div>
-      <button onclick="toggleChatDrawer(false)" class="text-slate-400 hover:text-white font-bold text-lg p-1">&times;</button>
+
+        <div class="stories-grid" id="stories-grid">
+            <!-- Stories will be dynamically rendered by JS -->
+        </div>
+
+        <div class="stories-load-more">
+            <button class="load-more-btn" id="load-more-stories">
+                კიდევ ისტორიების ნახვა
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"/>
+                </svg>
+            </button>
+        </div>
+    </section>
+
+    <!-- ===== QUOTE OF THE DAY ===== -->
+    <section class="quote-section" id="quote-section">
+        <div class="quote-bg-pattern"></div>
+        <div class="quote-container">
+            <div class="quote-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+                </svg>
+            </div>
+            <blockquote class="quote-text" id="quote-text">
+                "წარმატება არ არის საბოლოო, წარუმატებლობა სასიკვდილო არ არის: მნიშვნელოვანია გაგრძელების კურაჟი."
+            </blockquote>
+            <div class="quote-author">
+                <span id="quote-author">Winston Churchill</span>
+                <span class="quote-role" id="quote-role">ბრიტანეთის პრემიერ-მინისტრი</span>
+            </div>
+            <div class="quote-nav">
+                <button class="quote-nav-btn" id="prev-quote">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+                <div class="quote-dots" id="quote-dots"></div>
+                <button class="quote-nav-btn" id="next-quote">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PROFESSION SEARCH RESULTS MODAL ===== -->
+    <div class="search-modal" id="search-modal" style="display:none;">
+        <div class="search-modal-backdrop" id="search-modal-backdrop"></div>
+        <div class="search-modal-content">
+            <div class="search-modal-header">
+                <h3 id="search-modal-title">პროფესიის ინფორმაცია</h3>
+                <button class="modal-close-btn" id="search-modal-close">✕</button>
+            </div>
+            <div class="search-modal-body" id="search-modal-body">
+                <!-- Dynamic content -->
+            </div>
+        </div>
     </div>
 
-    <!-- Chat Messages Container -->
-    <div id="chat-messages" class="flex-grow p-4 overflow-y-auto flex flex-col gap-3 text-xs">
-      <!-- Auto loaded greeting message -->
+    <!-- ===== STORY MODAL ===== -->
+    <div class="story-modal" id="story-modal" style="display:none;">
+        <div class="story-modal-backdrop" id="story-modal-backdrop"></div>
+        <div class="story-modal-content">
+            <button class="modal-close-btn story-modal-close" id="story-modal-close">✕</button>
+            <div id="story-modal-body"></div>
+        </div>
     </div>
 
-    <!-- Mentor suggestions tip box (hidden by default) -->
-    <div id="coach-tip-box" class="bg-teal-950/20 border-t border-teal-500/10 px-4 py-2 text-[10px] text-teal-300 hidden items-start gap-1.5">
-      <span class="text-xs">💡</span>
-      <div class="flex-grow">
-        <strong>რჩევა:</strong> <span id="coach-tip-text">ეცადე კითხვაზე პასუხისას ახსენო შენი პრაქტიკული პროექტები.</span>
-      </div>
-      <button onclick="document.getElementById('coach-tip-box').classList.add('hidden')" class="text-teal-400 font-bold">&times;</button>
+    <!-- ===== FOOTER ===== -->
+    <footer class="main-footer">
+        <div class="footer-top">
+            <div class="footer-brand">
+                <div class="footer-logo">
+                    <svg width="32" height="32" viewBox="0 0 36 36" fill="none">
+                        <circle cx="18" cy="18" r="16" stroke="url(#fLogoGrad)" stroke-width="2"/>
+                        <path d="M18 6 L18 30 M6 18 L30 18" stroke="url(#fLogoGrad)" stroke-width="1.5" stroke-linecap="round"/>
+                        <circle cx="18" cy="18" r="4" fill="url(#fLogoGrad)"/>
+                        <defs>
+                            <linearGradient id="fLogoGrad" x1="0" y1="0" x2="36" y2="36">
+                                <stop stop-color="#00D4FF"/>
+                                <stop offset="1" stop-color="#7B2FBE"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span>Career Navigator AI</span>
+                </div>
+                <p class="footer-tagline">შენი ინტელექტუალური კარიერული პარტნიორი</p>
+                <div class="footer-social">
+                    <a href="#" class="social-link" title="LinkedIn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                        </svg>
+                    </a>
+                    <a href="#" class="social-link" title="Facebook">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                        </svg>
+                    </a>
+                    <a href="#" class="social-link" title="Twitter/X">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+
+            <div class="footer-links-grid">
+                <div class="footer-col">
+                    <h4>პლატფორმა</h4>
+                    <ul>
+                        <li><a href="#analyzer-section">CV ანალიზი</a></li>
+                        <li><a href="#stories-section">წარმატების ისტორიები</a></li>
+                        <li><a href="#quote-section">მოტივაცია</a></li>
+                        <li><a href="#" id="footer-chat-link">AI კოაჩი</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>კონფიდენციალურობა</h4>
+                    <ul>
+                        <li><a href="#" id="privacy-link">კონფიდ. პოლიტიკა</a></li>
+                        <li><a href="#" id="terms-link">გამოყენების წესები</a></li>
+                        <li><a href="#" id="data-link">მონაცემთა დაცვა</a></li>
+                        <li><a href="#" id="cookies-link">Cookie პოლიტიკა</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>დახმარება</h4>
+                    <ul>
+                        <li><a href="#" id="faq-link">ხშირი კითხვები</a></li>
+                        <li><a href="#" id="contact-link">დაგვიკავშირდი</a></li>
+                        <li><a href="#" id="guide-link">სარგებლობის სახელმძღვანელო</a></li>
+                        <li><a href="#" id="feedback-link">უკუკავშირი</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p class="footer-legal">
+                © 2025 Career Navigator AI. ყველა უფლება დაცულია. 
+                ეს პლატფორმა იყენებს AI ტექნოლოგიებს საგანმანათლებლო მიზნებისთვის. 
+                CV-ის მონაცემები არ ინახება სერვერებზე.
+            </p>
+            <div class="footer-badges">
+                <span class="footer-badge">🔒 GDPR შესაბამისი</span>
+                <span class="footer-badge">🇬🇪 Made in Georgia</span>
+                <span class="footer-badge">🤖 AI Powered</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ===== LEGAL MODALS ===== -->
+    <div class="legal-modal" id="legal-modal" style="display:none;">
+        <div class="legal-modal-backdrop" id="legal-backdrop"></div>
+        <div class="legal-modal-content">
+            <div class="legal-modal-header">
+                <h3 id="legal-title">სამართლებრივი ინფორმაცია</h3>
+                <button class="modal-close-btn" id="legal-close">✕</button>
+            </div>
+            <div class="legal-modal-body" id="legal-body"></div>
+        </div>
     </div>
 
-    <!-- Chips / Quick prompt suggestions -->
-    <div class="px-3 py-1.5 flex gap-1.5 overflow-x-auto border-t border-white/5 bg-slate-950/50" id="prompt-chips">
-      <button onclick="sendQuickPrompt('როგორ გავაუმჯობესო ჩემი CV?')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-2 py-1 rounded text-[10px] whitespace-nowrap transition-colors">როგორ გავაუმჯობესო CV?</button>
-      <button onclick="sendQuickPrompt('როგორ მოვემზადო გასაუბრებისთვის?')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-2 py-1 rounded text-[10px] whitespace-nowrap transition-colors">როგორ მოვემზადო გასაუბრებისთვის?</button>
-      <button onclick="sendQuickPrompt('რა უნარები მჭირდება AI დეველოპმენტისთვის?')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-2 py-1 rounded text-[10px] whitespace-nowrap transition-colors">რა მჭირდება AI დეველოპმენტისთვის?</button>
-    </div>
-
-    <!-- Input Bar -->
-    <div class="p-3 bg-slate-900/90 border-t border-white/5 flex gap-2 items-center">
-      <input type="text" id="chat-input" placeholder="დაუსვი კითხვა კარიერულ ასისტენტს..." class="flex-grow bg-slate-950 border border-slate-800 focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-3 py-2 text-xs focus:outline-none transition-colors" onkeydown="if(event.key === 'Enter') sendCoachMessage()">
-      <button onclick="sendCoachMessage()" class="shrink-0 w-8 h-8 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center transition-all shadow-md">
-        <svg class="w-4 h-4 transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+    <!-- ===== CHATBOT WIDGET ===== -->
+    <!-- Floating Chat Launcher -->
+    <button class="chat-fab" id="chat-fab" title="AI Career Coach-ის გახსნა">
+        <svg class="fab-icon open-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
         </svg>
-      </button>
+        <svg class="fab-icon close-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+        <span class="fab-pulse"></span>
+    </button>
+
+    <!-- Chatbot Panel -->
+    <div class="chatbot-panel" id="chatbot-panel" style="display:none;">
+        <div class="chatbot-header">
+            <div class="chatbot-header-info">
+                <div class="chatbot-avatar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="8" r="4"/>
+                        <path d="M20 21a8 8 0 1 0-16 0"/>
+                    </svg>
+                    <span class="avatar-status"></span>
+                </div>
+                <div class="chatbot-header-text">
+                    <span class="chatbot-name">Career Coach AI</span>
+                    <span class="chatbot-status">ონლაინ • მზადაა დახმარებისთვის</span>
+                </div>
+            </div>
+            <div class="chatbot-header-actions">
+                <button class="chat-action-btn" id="chat-minimize-btn" title="მინიმიზაცია">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                </button>
+                <button class="chat-action-btn" id="chat-close-btn" title="დახურვა">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="chatbot-messages" id="chatbot-messages">
+            <!-- Messages will be dynamically added -->
+        </div>
+
+        <div class="chatbot-suggestions" id="chatbot-suggestions">
+            <button class="suggestion-chip" data-msg="როგორ გავაუმჯობესო ჩემი CV?">CV-ის გაუმჯობესება</button>
+            <button class="suggestion-chip" data-msg="გასაუბრებისთვის მომზადება">გასაუბრება</button>
+            <button class="suggestion-chip" data-msg="რა უნარები ვისწავლო?">უნარები</button>
+            <button class="suggestion-chip" data-msg="სამსახურის ძიების სტრატეგია">სამსახურის ძიება</button>
+        </div>
+
+        <div class="chatbot-input-area">
+            <textarea class="chatbot-input" id="chatbot-input" 
+                placeholder="დაწერე კითხვა კარიერის შესახებ..." 
+                rows="1"></textarea>
+            <button class="chatbot-send-btn" id="chatbot-send-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+            </button>
+        </div>
     </div>
-  </aside>
 
-  <!-- Settings (Gemini API Key Setup) Modal -->
-  <div id="settings-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-    <div class="glass-panel p-6 rounded-2xl max-w-md w-full mx-4 flex flex-col gap-4 animate-fade-in relative">
-      <div class="flex justify-between items-center border-b border-white/5 pb-2">
-        <h3 class="text-sm font-bold text-white flex items-center gap-1.5">
-          <span>🔑</span>
-          <span>Google AI Studio - Gemini API კონფიგურაცია</span>
-        </h3>
-        <button onclick="toggleSettingsModal(false)" class="text-slate-400 hover:text-white font-bold text-lg">&times;</button>
-      </div>
-
-      <p class="text-xs text-slate-400 leading-relaxed">
-        იმისთვის, რომ აპლიკაციამ გამოიყენოს რეალური ხელოვნური ინტელექტი თქვენს მონაცემებზე, გთხოვთ მიუთითოთ თქვენი Gemini API Key. გასაღების გარეშე აპლიკაცია იმუშავებს სიმულაციურ რეჟიმში.
-      </p>
-
-      <div class="flex flex-col gap-1.5">
-        <label for="gemini-key-input" class="text-[10px] text-slate-400 font-bold uppercase">Gemini API Key:</label>
-        <input type="password" id="gemini-key-input" placeholder="შეიყვანეთ თქვენი Gemini API Key (AI Studio)..." class="w-full bg-slate-900 border border-slate-700 focus:border-indigo-500 text-slate-200 rounded-lg px-3 py-2 text-xs focus:outline-none transition-colors">
-      </div>
-
-      <div class="flex flex-col gap-1.5">
-        <label for="gemini-model-select" class="text-[10px] text-slate-400 font-bold uppercase">AI მოდელი (Gemini Model):</label>
-        <select id="gemini-model-select" class="w-full bg-slate-900 border border-slate-700 focus:border-indigo-500 text-slate-200 rounded-lg px-3 py-2 text-xs focus:outline-none transition-colors">
-          <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash (სწრაფი & რეკომენდებული)</option>
-          <option value="gemini-2.5-pro">Gemini 2.5 Pro (უფრო ზუსტი ანალიზი)</option>
-          <option value="gemini-1.5-flash">Gemini 1.5 Flash (ძველი ვერსია)</option>
-        </select>
-      </div>
-
-      <p class="text-[9px] text-slate-500 italic">
-        * API Key-ს მოპოვება შეგიძლიათ სრულიად უფასოდ <a href="https://aistudio.google.com/" target="_blank" class="text-cyan-400 underline">Google AI Studio</a>-დან.
-      </p>
-
-      <div class="flex gap-2 justify-end pt-2 border-t border-white/5">
-        <button onclick="toggleSettingsModal(false)" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-4 py-2 rounded-xl transition-colors">დახურვა</button>
-        <button onclick="clearSettingsKey()" class="bg-rose-950 hover:bg-rose-900 border border-rose-800 text-rose-300 text-xs font-semibold px-3 py-2 rounded-xl transition-colors">გასუფთავება</button>
-        <button onclick="saveSettingsKey()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors">შენახვა</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Help / Ethical Framework Modal -->
-  <div id="help-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
-    <div class="glass-panel p-6 rounded-2xl max-w-lg w-full mx-4 flex flex-col gap-4 animate-fade-in relative">
-      <div class="flex justify-between items-center border-b border-white/5 pb-2">
-        <h3 class="text-sm font-bold text-white flex items-center gap-1.5" id="help-modal-title">
-          <span>🛡️</span>
-          <span>ინფორმაცია</span>
-        </h3>
-        <button onclick="toggleHelpModal(false)" class="text-slate-400 hover:text-white font-bold text-lg">&times;</button>
-      </div>
-
-      <div class="text-xs text-slate-300 space-y-3 max-h-[300px] overflow-y-auto pr-1" id="help-modal-content">
-        <!-- Loaded dynamically -->
-      </div>
-
-      <div class="flex justify-end pt-2 border-t border-white/5">
-        <button onclick="toggleHelpModal(false)" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors">გავიგე</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Scripts -->
-  <script type="module" src="app.js"></script>
+    <!-- Scripts -->
+    <script src="app.js"></script>
 </body>
 </html>
